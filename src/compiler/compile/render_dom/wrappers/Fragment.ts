@@ -50,9 +50,11 @@ function trimmable_at(child: INode, next_sibling: Wrapper): boolean {
 	return (next_sibling.node.find_nearest(/EachBlock/) === child.find_nearest(/EachBlock/)) || next_sibling.node.prev.type === 'EachBlock';
 }
 
+// Abstraction of a fragment consisting only a constructor...
 export default class FragmentWrapper {
 	nodes: Wrapper[];
 
+	// operates only on <svelte:window />'s and text nodes
 	constructor(
 		renderer: Renderer,
 		block: Block,

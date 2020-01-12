@@ -14,6 +14,7 @@ export default function text(parser: Parser) {
 		data += parser.template[parser.index++];
 	}
 
+	// Text extends BaseNode
 	const node = {
 		start,
 		end: parser.index,

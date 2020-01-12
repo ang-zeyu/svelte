@@ -37,7 +37,7 @@ const events = [
 	{
 		event_names: ['input'],
 		filter: (node: Element, name: string) =>
-			(name === 'textContent' || name === 'innerHTML') &&
+			(name === 'textContent' || name === 'innerHTML' || name === 'innerText') &&
 			node.attributes.some(attribute => attribute.name === 'contenteditable')
 	},
 	{
@@ -160,6 +160,7 @@ export default class ElementWrapper extends Wrapper {
 
 		this.class_dependencies = [];
 
+		// let x = 1; ...
 		if (this.node.children.length) {
 			this.node.lets.forEach(l => {
 				extract_names(l.value || l.name).forEach(name => {
@@ -168,7 +169,9 @@ export default class ElementWrapper extends Wrapper {
 			});
 		}
 
+		// attributes...
 		this.attributes = this.node.attributes.map(attribute => {
+			//
 			if (attribute.name === 'slot') {
 				// TODO make separate subclass for this?
 				let owner = this.parent;
@@ -217,6 +220,7 @@ export default class ElementWrapper extends Wrapper {
 			}
 			return new AttributeWrapper(this, block, attribute);
 		});
+		// attribute handling end
 
 		// ordinarily, there'll only be one... but we need to handle
 		// the rare case where an element can have multiple bindings,
@@ -400,6 +404,10 @@ export default class ElementWrapper extends Wrapper {
 
 	can_use_textcontent() {
 		return this.is_static_content && this.fragment.nodes.every(node => node.node.type === 'Text' || node.node.type === 'MustacheTag');
+	}
+
+	can_use_innertext() {
+		return this.can_use_textcontent();
 	}
 
 	get_render_statement(block: Block) {
@@ -632,7 +640,7 @@ export default class ElementWrapper extends Wrapper {
 
 	add_this_binding(block: Block, this_binding: Binding) {
 		const { renderer } = this;
-		
+
 		renderer.component.has_reactive_assignments = true;
 
 		const binding_callback = bind_this(renderer.component, block, this_binding.node, this.var);
