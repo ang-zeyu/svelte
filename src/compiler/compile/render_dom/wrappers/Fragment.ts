@@ -38,6 +38,7 @@ const wrappers = {
 	Window
 };
 
+// links second to first, first back to second
 function link(next: Wrapper, prev: Wrapper) {
 	prev.next = next;
 	if (next) next.prev = prev;
@@ -50,9 +51,11 @@ function trimmable_at(child: INode, next_sibling: Wrapper): boolean {
 	return (next_sibling.node.find_nearest(/EachBlock/) === child.find_nearest(/EachBlock/)) || next_sibling.node.prev.type === 'EachBlock';
 }
 
+// Abstraction of a fragment consisting only a constructor...
 export default class FragmentWrapper {
 	nodes: Wrapper[];
 
+	// operates only on <svelte:window />'s and text nodes
 	constructor(
 		renderer: Renderer,
 		block: Block,
@@ -114,9 +117,11 @@ export default class FragmentWrapper {
 
 				link(last_child, last_child = wrapper);
 			} else {
+				// Retrieve the appropriate constructor
 				const Wrapper = wrappers[child.type];
 				if (!Wrapper) continue;
 
+				// The magic happens here
 				const wrapper = new Wrapper(renderer, block, parent, child, strip_whitespace, last_child || next_sibling);
 				this.nodes.unshift(wrapper);
 

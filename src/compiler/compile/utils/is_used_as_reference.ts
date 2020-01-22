@@ -8,6 +8,7 @@ export default function is_used_as_reference(
 	if (!is_reference(node, parent)) {
 		return false;
 	}
+	// and implicity is_reference
 	if (!parent) {
 		return true;
 	}

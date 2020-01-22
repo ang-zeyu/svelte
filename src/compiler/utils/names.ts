@@ -108,6 +108,7 @@ export const reserved = new Set([
 	'yield',
 ]);
 
+// Elements which can never have content
 const void_element_names = /^(?:area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)$/;
 
 export function is_void(name: string) {

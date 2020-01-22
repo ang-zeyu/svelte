@@ -29,6 +29,7 @@ const valid_options = [
 	'preserveWhitespace'
 ];
 
+// Does what it says
 function validate_options(options: CompileOptions, warnings: Warning[]) {
 	const { name, filename, loopGuardTimeout, dev } = options;
 
@@ -67,18 +68,22 @@ function validate_options(options: CompileOptions, warnings: Warning[]) {
 	}
 }
 
+// hohohoho - validate options -> parse -> build component -> render it -> generate it
 export default function compile(source: string, options: CompileOptions = {}) {
 	options = assign({ generate: 'dom', dev: false }, options);
 
 	const stats = new Stats();
 	const warnings = [];
 
+	// first we validate
 	validate_options(options, warnings);
 
+	// then we parse
 	stats.start('parse');
 	const ast = parse(source, options);
 	stats.stop('parse');
 
+	// then we build the component
 	stats.start('create component');
 	const component = new Component(
 		ast,
@@ -90,11 +95,13 @@ export default function compile(source: string, options: CompileOptions = {}) {
 	);
 	stats.stop('create component');
 
+	// then comes rendering the component
 	const result = options.generate === false
 		? null
 		: options.generate === 'ssr'
 			? render_ssr(component, options)
 			: render_dom(component, options);
 
+	// and finally back to generating it
 	return component.generate(result);
 }

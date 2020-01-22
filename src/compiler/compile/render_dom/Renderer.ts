@@ -45,6 +45,8 @@ export default class Renderer {
 
 		this.file_var = options.dev && this.component.get_unique_name('file');
 
+		// hoistable - duh
+		// export_name && module - is component props, but still hoistable
 		component.vars.filter(v => !v.hoistable || (v.export_name && !v.module)).forEach(v => this.add_to_context(v.name));
 
 		// ensure store values are included in context
@@ -59,6 +61,7 @@ export default class Renderer {
 			this.add_to_context('$$slots');
 		}
 
+		// Won't this always be 0?
 		if (this.binding_groups.length > 0) {
 			this.add_to_context('$$binding_groups');
 		}
@@ -77,6 +80,7 @@ export default class Renderer {
 
 		this.block.has_update_method = true;
 
+		// this does a lot of population for renderer blocks and the main block
 		this.fragment = new FragmentWrapper(
 			this,
 			this.block,
@@ -86,6 +90,7 @@ export default class Renderer {
 			null
 		);
 
+		// Only after we construct the fragment wrapper above!
 		// TODO messy
 		this.blocks.forEach(block => {
 			if (block instanceof Block) {
@@ -95,11 +100,14 @@ export default class Renderer {
 
 		this.block.assign_variable_names();
 
+		// Impt: Recursively calls render on its nodes
 		this.fragment.render(this.block, null, x`#nodes` as Identifier);
 
 		this.context_overflow = this.context.length > 31;
 
+		// For component.generate() later...
 		this.context.forEach(member => {
+			// non-contextual, which for all constructor calls is true...
 			const { variable } = member;
 			if (variable) {
 				member.priority += 2;
@@ -116,11 +124,17 @@ export default class Renderer {
 			}
 		});
 
+		// sort by priority then by original order
 		this.context.sort((a, b) => (b.priority - a.priority) || ((a.index.value as number) - (b.index.value as number)));
+		// update index
 		this.context.forEach((member, i) => member.index.value = i);
 	}
 
+	// Populates context_lookup and context
+	// TODO figure out what is Contextual
 	add_to_context(name: string, contextual = false) {
+		// context_lookup is a Map<String, ContextMember>
+		// if it is not inside
 		if (!this.context_lookup.has(name)) {
 			const member: ContextMember = {
 				name,
@@ -137,6 +151,8 @@ export default class Renderer {
 
 		const member = this.context_lookup.get(name);
 
+		// Make contextual if so, other make not so.
+		// If not contextual, assign variable to the component's corresponding variable
 		if (contextual) {
 			member.is_contextual = true;
 		} else {
@@ -145,6 +161,7 @@ export default class Renderer {
 			member.variable = variable;
 		}
 
+		// Return member
 		return member;
 	}
 
@@ -152,6 +169,7 @@ export default class Renderer {
 		const variable = this.component.var_lookup.get(name);
 		const member = this.context_lookup.get(name);
 
+		// Store & also prop or reassigned?
 		if (variable && (variable.subscribable && (variable.reassigned || variable.export_name))) {
 			return x`${`$$subscribe_${name}`}($$invalidate(${member.index}, ${value || name}))`;
 		}

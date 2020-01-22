@@ -8,6 +8,8 @@ export default class AwaitBlock extends Node {
 	type: 'AwaitBlock';
 	expression: Expression;
 	value: string;
+	once: boolean;
+	onceValue: string;
 	error: string;
 
 	pending: PendingBlock;
@@ -21,6 +23,9 @@ export default class AwaitBlock extends Node {
 
 		this.value = info.value;
 		this.error = info.error;
+
+		this.once = info.once;
+		this.onceValue = info.onceValue;
 
 		this.pending = new PendingBlock(component, this, scope, info.pending);
 		this.then = new ThenBlock(component, this, scope, info.then);

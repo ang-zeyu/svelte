@@ -73,6 +73,7 @@ export default class AwaitBlockWrapper extends Wrapper {
 		block.add_dependencies(this.node.expression.dependencies);
 		if (this.node.value) block.renderer.add_to_context(this.node.value, true);
 		if (this.node.error) block.renderer.add_to_context(this.node.error, true);
+		if (this.node.once) block.renderer.add_to_context(this.node.onceValue, true);
 
 		let is_dynamic = false;
 		let has_intros = false;
@@ -122,6 +123,7 @@ export default class AwaitBlockWrapper extends Wrapper {
 		}
 	}
 
+	// The magic happens here
 	render(
 		block: Block,
 		parent_node: Identifier,

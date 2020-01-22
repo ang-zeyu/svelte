@@ -6,6 +6,7 @@ import { trim_start, trim_end } from '../../utils/trim';
 import { Parser } from '../index';
 import { TemplateNode } from '../../interfaces';
 
+// More accurately, trims its starting and ending children recursively
 function trim_whitespace(block: TemplateNode, trim_before: boolean, trim_after: boolean) {
 	if (!block.children || block.children.length === 0) return; // AwaitBlock
 
@@ -31,7 +32,10 @@ function trim_whitespace(block: TemplateNode, trim_before: boolean, trim_after: 
 	}
 }
 
+// NOTE, that html tags inside the blocks would already have been popped have the stack
+// only closing_tag_omitted tags may not have been so
 export default function mustache(parser: Parser) {
+	// before '{'
 	const start = parser.index;
 	parser.index += 1;
 
@@ -42,12 +46,14 @@ export default function mustache(parser: Parser) {
 		let block = parser.current();
 		let expected;
 
+		// Can don't be closed.
 		if (closing_tag_omitted(block.name)) {
 			block.end = start;
 			parser.stack.pop();
 			block = parser.current();
 		}
 
+		// waddis for?
 		if (block.type === 'ElseBlock' || block.type === 'PendingBlock' || block.type === 'ThenBlock' || block.type === 'CatchBlock') {
 			block.end = start;
 			parser.stack.pop();
@@ -93,7 +99,10 @@ export default function mustache(parser: Parser) {
 
 		block.end = parser.index;
 		parser.stack.pop();
+
+	// else, else if, and else following each's
 	} else if (parser.eat(':else')) {
+		// syntax
 		if (parser.eat('if')) {
 			parser.error({
 				code: 'invalid-elseif',
@@ -119,6 +128,7 @@ export default function mustache(parser: Parser) {
 			parser.allow_whitespace();
 			parser.eat('}', true);
 
+			// IfBlock has an else property
 			block.else = {
 				start: parser.index,
 				end: null,
@@ -151,6 +161,7 @@ export default function mustache(parser: Parser) {
 			parser.allow_whitespace();
 			parser.eat('}', true);
 
+			// If or each block has else property
 			block.else = {
 				start: parser.index,
 				end: null,
@@ -161,7 +172,9 @@ export default function mustache(parser: Parser) {
 			parser.stack.push(block.else);
 		}
 	} else if (parser.match(':then') || parser.match(':catch')) {
+		// NOTE there is AwaitBlock, PendingBlock, ThenBlock, CatchBlocks...
 		const block = parser.current();
+		// NOTE the !. Explicit.
 		const is_then = parser.eat(':then') || !parser.eat(':catch');
 
 		if (is_then) {
@@ -184,10 +197,19 @@ export default function mustache(parser: Parser) {
 		parser.stack.pop();
 		const await_block = parser.current();
 
+		// read the identifier to the right
+		// 'value' property of await is the original promise's resolved value's identifier
 		if (!parser.eat('}')) {
 			parser.require_whitespace();
 			await_block[is_then ? 'value': 'error'] = parser.read_identifier();
 			parser.allow_whitespace();
+
+			if (await_block.once && parser.eat(',')) {
+				parser.allow_whitespace();
+				block.onceValue = parser.read_identifier();
+				parser.allow_whitespace();
+			}
+
 			parser.eat('}', true);
 		}
 
@@ -199,12 +221,14 @@ export default function mustache(parser: Parser) {
 			skip: false
 		};
 
+		// todo confirm await block has pending, then and catch properties!
 		await_block[is_then ? 'then' : 'catch'] = new_block;
 		parser.stack.push(new_block);
 	} else if (parser.eat('#')) {
 		// {#if foo}, {#each foo} or {#await foo}
 		let type;
 
+		// ok, straight forward.
 		if (parser.eat('if')) {
 			type = 'IfBlock';
 		} else if (parser.eat('each')) {
@@ -220,8 +244,14 @@ export default function mustache(parser: Parser) {
 
 		parser.require_whitespace();
 
+		const once = type === 'AwaitBlock' && parser.eat('once');
+		if (once) {
+			parser.require_whitespace();
+		}
+
 		const expression = read_expression(parser);
 
+		// expressions stores the original promise
 		const block: TemplateNode = type === 'AwaitBlock' ?
 			{
 				start,
@@ -229,6 +259,9 @@ export default function mustache(parser: Parser) {
 				type,
 				expression,
 				value: null,
+				once,
+				onceValue: null,
+				hasLoaded: false,
 				error: null,
 				pending: {
 					start: null,
@@ -262,15 +295,18 @@ export default function mustache(parser: Parser) {
 
 		parser.allow_whitespace();
 
+		// thus they also have a context, index and key property
 		// {#each} blocks must declare a context – {#each list as item}
 		if (type === 'EachBlock') {
 			parser.eat('as', true);
 			parser.require_whitespace();
 
+			// ok, very in house parser for each block contexts
 			block.context = read_context(parser);
 
 			parser.allow_whitespace();
 
+			// dah index identifier
 			if (parser.eat(',')) {
 				parser.allow_whitespace();
 				block.index = parser.read_identifier();
@@ -282,6 +318,7 @@ export default function mustache(parser: Parser) {
 				parser.allow_whitespace();
 			}
 
+			// dah key
 			if (parser.eat('(')) {
 				parser.allow_whitespace();
 
@@ -292,18 +329,27 @@ export default function mustache(parser: Parser) {
 			}
 		}
 
+		// thus await blocks' value property are still the resolved value
 		const await_block_shorthand = type === 'AwaitBlock' && parser.eat('then');
 		if (await_block_shorthand) {
 			parser.require_whitespace();
 			block.value = parser.read_identifier();
 			parser.allow_whitespace();
+
+			if (once && parser.eat(',')) {
+				parser.allow_whitespace();
+				block.onceValue = parser.read_identifier();
+				parser.allow_whitespace();
+			}
 		}
 
 		parser.eat('}', true);
 
+		// note they can be children as well!
 		parser.current().children.push(block);
 		parser.stack.push(block);
 
+		// .skips
 		if (type === 'AwaitBlock') {
 			let child_block;
 			if (await_block_shorthand) {

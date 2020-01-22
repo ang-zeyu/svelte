@@ -738,6 +738,7 @@ export default class Element extends Node {
 		const class_attribute = this.attributes.find(a => a.name === 'class');
 
 		if (class_attribute && !class_attribute.is_true) {
+			// does the same thing? adds the id
 			if (class_attribute.chunks.length === 1 && class_attribute.chunks[0].type === 'Text') {
 				(class_attribute.chunks[0] as Text).data += ` ${id}`;
 			} else {

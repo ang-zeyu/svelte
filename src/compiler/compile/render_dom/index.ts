@@ -14,6 +14,7 @@ export default function dom(
 ): { js: Node[]; css: CssResult } {
 	const { name } = component;
 
+	//
 	const renderer = new Renderer(component, options);
 	const { block } = renderer;
 
@@ -29,6 +30,7 @@ export default function dom(
 		body.push(b`const ${renderer.file_var} = ${file};`);
 	}
 
+	// TODO understand the css process Ahck.
 	const css = component.stylesheet.render(options.filename, !options.customElement);
 	const styles = component.stylesheet.has_styles && options.dev
 		? `${css.code}\n/*# sourceMappingURL=${css.map.toUrl()} */`
@@ -57,6 +59,7 @@ export default function dom(
 	// TODO the deconflicted names of blocks are reversed... should set them here
 	const blocks = renderer.blocks.slice().reverse();
 
+	// renders the Block if it is renderable, otherwise just pushes it
 	body.push(...blocks.map(block => {
 		// TODO this is a horrible mess — renderer.blocks
 		// contains a mixture of Blocks and Nodes
@@ -75,6 +78,7 @@ export default function dom(
 	const props = component.vars.filter(variable => !variable.module && variable.export_name);
 	const writable_props = props.filter(variable => variable.writable);
 
+  // TODO what in the world does this do?
 	const set = (uses_props || writable_props.length > 0 || component.slots.size > 0)
 		? x`
 			${$$props} => {

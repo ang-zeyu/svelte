@@ -77,6 +77,7 @@ export default class Block {
 	has_update_method = false;
 	autofocus: string;
 
+	// Nothing much, just assigns options as given
 	constructor(options: BlockOptions) {
 		this.parent = options.parent;
 		this.renderer = options.renderer;

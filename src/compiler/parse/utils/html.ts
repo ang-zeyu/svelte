@@ -40,6 +40,7 @@ const entity_pattern = new RegExp(
 	'g'
 );
 
+// replace tat code
 export function decode_character_references(html: string) {
 	return html.replace(entity_pattern, (match, entity) => {
 		let code;
@@ -113,6 +114,7 @@ function validate_code(code: number) {
 	return NUL;
 }
 
+// Basically map of elements to what they can be followed by which automatically terminates it
 // based on http://developers.whatwg.org/syntax.html#syntax-tag-omission
 const disallowed_contents = new Map([
 	['li', new Set(['li'])],
@@ -142,6 +144,8 @@ const disallowed_contents = new Map([
 // close it, like `<li>one<li>two`?
 export function closing_tag_omitted(current: string, next?: string) {
 	if (disallowed_contents.has(current)) {
+		// !next because next may be an empty String. this is typescript.
+		// Or it can be null, as called in mustache.ts, in which case we only want to check for whether the map has current
 		if (!next || disallowed_contents.get(current).has(next)) {
 			return true;
 		}

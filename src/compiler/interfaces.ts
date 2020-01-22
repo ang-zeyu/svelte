@@ -143,6 +143,7 @@ export interface AppendTarget {
 	slot_stack: string[];
 }
 
+// In house interface for variables
 export interface Var {
 	name: string;
 	export_name?: string; // the `bar` in `export { foo as bar }`
@@ -163,7 +164,7 @@ export interface Var {
 	is_reactive_dependency?: boolean;
 }
 
-export interface CssResult { 
+export interface CssResult {
 	code: string;
 	map: SourceMap;
 }

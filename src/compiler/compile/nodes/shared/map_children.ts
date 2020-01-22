@@ -18,6 +18,7 @@ import { TemplateNode } from '../../../interfaces';
 
 export type Children = ReturnType<typeof map_children>;
 
+// Gets the appropriate constructor
 function get_constructor(type) {
 	switch (type) {
 		case 'AwaitBlock': return AwaitBlock;
@@ -50,6 +51,7 @@ export default function map_children(component, parent, scope, children: Templat
 		const use_ignores = child.type !== 'Text' && child.type !== 'Comment' && ignores.length;
 
 		if (use_ignores) component.push_ignores(ignores);
+		// construct the appropriate node type
 		const node = new constructor(component, parent, scope, child);
 		if (use_ignores) component.pop_ignores(), ignores = [];
 

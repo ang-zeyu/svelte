@@ -17,6 +17,7 @@ interface Property {
 	value: Context;
 }
 
+// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 interface Context {
 	start: number;
 	end: number;
@@ -42,6 +43,8 @@ function error_on_rest_pattern_not_last(parser: Parser) {
 	}, parser.index);
 }
 
+// used for context of {#each ...} blocks in mustache.ts
+// A context also contains more Context[], and Property[] ( for ObjectPattern )
 export default function read_context(parser: Parser) {
 	const context: Context = {
 		start: parser.index,
@@ -57,6 +60,7 @@ export default function read_context(parser: Parser) {
 			parser.allow_whitespace();
 
 			const lastContext = context.elements[context.elements.length - 1];
+			// should be first?
 			if (lastContext && lastContext.type === 'RestIdentifier') {
 				error_on_rest_pattern_not_last(parser);
 			}
@@ -81,6 +85,7 @@ export default function read_context(parser: Parser) {
 		do {
 			parser.allow_whitespace();
 
+			// should be last in the object, if any
 			if (parser.eat('...')) {
 				parser.allow_whitespace();
 

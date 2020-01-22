@@ -87,12 +87,15 @@ class Rule {
 		code.remove(c, this.node.block.end - 1);
 	}
 
+	// transform for rule
 	transform(code: MagicString, id: string, keyframes: Map<string, string>, max_amount_class_specificity_increased: number) {
+		// Already processed below in Atrule
 		if (this.parent && this.parent.node.type === 'Atrule' && is_keyframes_node(this.parent.node)) return true;
 
 		const attr = `.${id}`;
 
 		this.selectors.forEach(selector => selector.transform(code, attr, max_amount_class_specificity_increased));
+		// processes animation / animation-names
 		this.declarations.forEach(declaration => declaration.transform(code, keyframes));
 	}
 
@@ -120,6 +123,8 @@ class Declaration {
 		this.node = node;
 	}
 
+	// Transforms identifiers inside animation || animation-name declarations
+	// If the keyframe has that identifier, then we overwrite the identifier directly with the keyframe code
 	transform(code: MagicString, keyframes: Map<string, string>) {
 		const property = this.node.property && remove_css_prefix(this.node.property.toLowerCase());
 		if (property === 'animation' || property === 'animation-name') {
@@ -376,12 +381,16 @@ export default class Stylesheet {
 		}
 	}
 
+	// Adds the ids
 	reify() {
 		this.nodes_with_css_class.forEach((node: Element) => {
 			node.add_css_class();
 		});
 	}
 
+	// Generates a { code: ..., map:... }'
+	// Called in render_dom / ssr
+	// should_transform_selectors = !options.customElement in render_dom, true in render_ssr
 	render(file: string, should_transform_selectors: boolean) {
 		if (!this.has_styles) {
 			return { code: null, map: null };

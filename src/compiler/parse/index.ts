@@ -8,12 +8,15 @@ import error from '../utils/error';
 
 type ParserState = (parser: Parser) => (ParserState | void);
 
+// The main parser class
 export class Parser {
 	readonly template: string;
 	readonly filename?: string;
 	readonly customElement: boolean;
 
 	index = 0;
+	// Fragment extends BaseNode
+	// Note that fragment houses TemplateNode[] in .children
 	stack: TemplateNode[] = [];
 
 	html: Fragment;
@@ -21,6 +24,7 @@ export class Parser {
 	js: Script[] = [];
 	meta_tags = {};
 
+	// Template = the content
 	constructor(template: string, options: ParserOptions) {
 		if (typeof template !== 'string') {
 			throw new TypeError('Template must be a string');
@@ -39,12 +43,15 @@ export class Parser {
 
 		this.stack.push(this.html);
 
+		// ParserState's repeatedly take the parser and returns (Parser) => (Parser) => (Parser) => fragment ( which is also a parser state )
 		let state: ParserState = fragment;
 
+		// I.e. keeps returning the next ParserState (operator) to operate on the Parser (operand)
 		while (this.index < this.template.length) {
 			state = state(this) || fragment;
 		}
 
+		// error duh
 		if (this.stack.length > 1) {
 			const current = this.current();
 
@@ -57,6 +64,7 @@ export class Parser {
 			}, current.start);
 		}
 
+		// also error
 		if (state !== fragment) {
 			this.error({
 				code: `unexpected-eof`,
@@ -64,6 +72,7 @@ export class Parser {
 			});
 		}
 
+		// trim
 		if (this.html.children.length) {
 			let start = this.html.children[0].start;
 			while (whitespace.test(template[start])) start += 1;
@@ -78,6 +87,7 @@ export class Parser {
 		}
 	}
 
+	// Peek() equivalent
 	current() {
 		return this.stack[this.stack.length - 1];
 	}
@@ -99,6 +109,9 @@ export class Parser {
 		});
 	}
 
+	/**
+	 * Eats the string and forwards this.index if the string matches
+	 */
 	eat(str: string, required?: boolean, message?: string) {
 		if (this.match(str)) {
 			this.index += str.length;
@@ -115,10 +128,13 @@ export class Parser {
 		return false;
 	}
 
+	// eat, without manipulating index
 	match(str: string) {
 		return this.template.slice(this.index, this.index + str.length) === str;
 	}
 
+	// just match from index, does not manipulate index
+	// returns the first match's result
 	match_regex(pattern: RegExp) {
 		const match = pattern.exec(this.template.slice(this.index));
 		if (!match || match.index !== 0) return null;
@@ -126,6 +142,7 @@ export class Parser {
 		return match[0];
 	}
 
+	// Contrary to its naming, it simply just advances past any white space present
 	allow_whitespace() {
 		while (
 			this.index < this.template.length &&
@@ -135,12 +152,17 @@ export class Parser {
 		}
 	}
 
+	// Similar to eat but without required and with regexps instead
+	// Advances by the length of the first match
+	// Beware whether ^ anchor is used
 	read(pattern: RegExp) {
 		const result = this.match_regex(pattern);
 		if (result) this.index += result.length;
 		return result;
 	}
 
+	// todo what does this do?
+	// probably reads the attribute name
 	read_identifier() {
 		const start = this.index;
 
@@ -170,6 +192,8 @@ export class Parser {
 		return identifier;
 	}
 
+	// Unlike read, reads until it if present ( and excluding it ), reads until 'eof' if not
+	// Returns the matches string if present, otherwise, from start - eof
 	read_until(pattern: RegExp) {
 		if (this.index >= this.template.length)
 			this.error({
@@ -201,6 +225,7 @@ export class Parser {
 	}
 }
 
+// Component level!
 export default function parse(
 	template: string,
 	options: ParserOptions = {}

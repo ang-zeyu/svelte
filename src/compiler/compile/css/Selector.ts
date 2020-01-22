@@ -63,7 +63,10 @@ export default class Selector {
 		});
 	}
 
+	// Selector transform
+	// where attr is .${id}, the maximum amount of class specificity increased
 	transform(code: MagicString, attr: string, max_amount_class_specificity_increased: number) {
+		// ok, minus because
 		const amount_class_specificity_to_increase = max_amount_class_specificity_increased - this.blocks.filter(block => block.should_encapsulate).length;
 		attr = attr.repeat(amount_class_specificity_to_increase + 1);
 
@@ -136,6 +139,7 @@ export default class Selector {
 		}
 	}
 
+	// Css selector priority
 	get_amount_class_specificity_increased() {
 		let count = 0;
 		for (const block of this.blocks) {
